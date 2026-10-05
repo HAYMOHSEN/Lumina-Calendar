@@ -1,7 +1,7 @@
 {
   "id": "lumina-calendar",
   "name": "Lumina Calendar",
-  "short_name": "Lumina",
+  "short_name": "Lumina Calendar",
   "description": "A strikingly beautiful smart calendar for daily life — type events in plain English or Arabic, month/week/agenda views, reminders, repeating events, several calendars, folder sync, and it works offline.",
   "lang": "en",
   "dir": "auto",

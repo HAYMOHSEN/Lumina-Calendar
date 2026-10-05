@@ -62,9 +62,11 @@ relative.
    - **Package ID** → Package Identity Name from Partner Center
    - **Publisher ID** → Package/Identity/Publisher (the `CN=…` value)
    - **Publisher display name** → your publisher display name
-   - **App name** → *the exact reserved Store name* (e.g. `Lumina Calendar`). This is the value the
-     Store rejected last time for Awraq PDF when it did not match — it must be identical, including
-     spaces and punctuation.
+   - **App name** → *the exact reserved Store name*: `Lumina Calendar`. PWABuilder pre-fills this
+     field from the manifest's `short_name` and writes it into the package as
+     `Package/Properties/DisplayName`; the Store rejects the upload if it differs from the reserved
+     name by even one character. The manifest's `short_name` is already `Lumina Calendar`, so the
+     pre-filled value is right — just check it before pressing Generate.
    - **App version** → `1.0.1` and **Classic app version** → `1.0.0` (the Store requires the classic
      package version to be lower than the app version). For every later update raise both numbers.
    - Leave the icon and URL fields as detected (the 512 px icon is in the manifest).

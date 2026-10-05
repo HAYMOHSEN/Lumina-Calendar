@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '1.1.0';
+  const APP_VERSION = '1.1.1';
   const T = LuminaI18n.t;
   const C = LuminaCore;
   const S = LuminaStore;

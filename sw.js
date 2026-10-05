@@ -1,6 +1,6 @@
 /* Lumina Calendar — service worker (offline-first app shell).
  * Bump VERSION whenever you publish a new build so users receive the update. */
-const VERSION = 'lumina-v1.1.0';
+const VERSION = 'lumina-v1.1.1';
 const CORE = [
   './',
   './index.html',
