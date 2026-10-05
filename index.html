@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Lumina Calendar — a strikingly beautiful smart calendar for daily life. Works offline, English and Arabic.">
+  <meta name="application-name" content="Lumina Calendar">
+  <meta name="theme-color" content="#0a0a0c" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eef0f6" media="(prefers-color-scheme: light)">
+  <meta name="color-scheme" content="dark light">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lumina">
+  <title>Lumina Calendar</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/app.css">
+
+  <!-- Apply the saved theme and language before the first paint to avoid a flash. -->
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('lumina.settings') || '{}');
+        var theme = s.theme || 'system';
+        if (theme === 'system') theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        var lang = s.lang || ((navigator.language || '').toLowerCase().indexOf('ar') === 0 ? 'ar' : 'en');
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      } catch (e) { /* defaults stay */ }
+    })();
+  </script>
+</head>
+<body>
+
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <header class="app-header glass">
+    <div class="brand">
+      <div class="brand-logo"><i data-icon="calendar-days"></i></div>
+      <h1 class="brand-name" data-i18n="appName">Lumina Calendar</h1>
+    </div>
+
+    <div class="header-center">
+      <div class="seg glass" role="tablist" aria-label="View">
+        <button class="seg-btn active" data-view="month" role="tab" aria-selected="true" title="1"><i data-icon="calendar" class="sm"></i><span class="lbl" data-i18n="month">Month</span></button>
+        <button class="seg-btn" data-view="week" role="tab" aria-selected="false" title="2"><i data-icon="calendar-range" class="sm"></i><span class="lbl" data-i18n="week">Week</span></button>
+        <button class="seg-btn" data-view="agenda" role="tab" aria-selected="false" title="3"><i data-icon="list" class="sm"></i><span class="lbl" data-i18n="agenda">Agenda</span></button>
+      </div>
+      <button id="btn-today" class="btn" data-i18n="today">Today</button>
+      <div class="nav-group glass">
+        <button id="btn-prev" class="icon-btn" data-i18n-title="previous" aria-label="Previous"><i data-icon="chevron-left" class="flip-rtl"></i></button>
+        <span id="period-label" class="period-label">…</span>
+        <button id="btn-next" class="icon-btn" data-i18n-title="next" aria-label="Next"><i data-icon="chevron-right" class="flip-rtl"></i></button>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="search-wrap">
+        <i data-icon="search" class="sm"></i>
+        <input id="search" class="search-input" type="search" autocomplete="off" spellcheck="false" data-i18n-placeholder="searchPlaceholder" placeholder="Search events…" aria-label="Search events">
+        <button id="search-clear" class="icon-btn sm search-clear" data-i18n-title="clearSearch" aria-label="Clear search" hidden><i data-icon="x" class="sm"></i></button>
+      </div>
+      <button id="btn-new" class="icon-btn accent" data-i18n-title="newEvent" aria-label="New event"><i data-icon="plus"></i></button>
+      <button id="btn-settings" class="icon-btn glass" data-i18n-title="settings" aria-label="Settings"><i data-icon="settings"></i></button>
+    </div>
+  </header>
+
+  <div class="app-banners">
+    <div id="backup-banner" class="banner" hidden role="button" tabindex="0">
+      <i data-icon="folder-open" class="sm"></i><span data-i18n="reauthorize">Click to re-allow access to your backup folder</span>
+    </div>
+  </div>
+
+  <main class="app-main">
+    <section class="card view-card slide-up" id="view-root" aria-live="polite">
+      <!-- Month / week / agenda views render here -->
+    </section>
+
+    <aside class="side-col slide-up" style="animation-delay: 0.08s">
+      <div id="welcome-card" class="card welcome" hidden>
+        <h3><i data-icon="sparkles" class="sm"></i><span data-i18n="welcomeTitle">Welcome to Lumina</span></h3>
+        <ul>
+          <li data-i18n="welcome1"></li>
+          <li data-i18n="welcome2"></li>
+          <li data-i18n="welcome3"></li>
+        </ul>
+        <div><button id="btn-welcome-ok" class="btn btn-sm btn-primary" data-i18n="gotIt">Got it</button></div>
+      </div>
+
+      <div class="card side-card">
+        <div class="side-head">
+          <div>
+            <h2 data-i18n="smartAgenda">Smart Agenda</h2>
+            <p id="side-date" class="side-date">…</p>
+            <p id="side-hijri" class="side-hijri" hidden></p>
+          </div>
+          <button id="btn-new-side" class="icon-btn accent" data-i18n-title="newEvent" aria-label="New event"><i data-icon="plus"></i></button>
+        </div>
+        <div class="quick-add">
+          <div class="quick-row">
+            <i data-icon="sparkles" class="sm quick-icon"></i>
+            <input id="quick-add" class="quick-input" type="text" autocomplete="off" spellcheck="false" maxlength="200" data-i18n-placeholder="quickPlaceholder" placeholder="Add: Lunch with Sara tomorrow 1pm" aria-label="Quick add">
+            <button id="quick-open" class="icon-btn sm" type="button" data-i18n-title="quickOpenEditor" aria-label="Open in the editor" hidden><i data-icon="pencil" class="sm"></i></button>
+          </div>
+          <div id="quick-preview" class="quick-preview" hidden></div>
+        </div>
+        <div id="next-up" class="next-up" hidden></div>
+        <div id="side-list" class="side-list"></div>
+        <div class="side-stats">
+          <div class="stat"><span data-i18n="totalThisMonth">Total this month</span><b id="stat-month">0</b></div>
+          <div class="stat"><span data-i18n="thisWeek">This week</span><b id="stat-week">0</b></div>
+          <div class="side-cals-head"><span data-i18n="calendars">Calendars</span><button id="btn-manage-cals" class="icon-btn sm" type="button" data-i18n-title="manageCalendars" aria-label="Manage calendars"><i data-icon="settings" class="xs"></i></button></div>
+          <div id="cal-list" class="cal-list"></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Event editor -->
+  <div id="event-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel card">
+      <div class="modal-head">
+        <h3 id="event-modal-title" data-i18n="newEvent">New event</h3>
+        <button class="icon-btn" data-close data-i18n-title="close" aria-label="Close"><i data-icon="x"></i></button>
+      </div>
+      <form id="event-form" class="form" novalidate>
+        <input type="hidden" id="ev-id">
+        <div class="field" id="f-title">
+          <label for="ev-title" data-i18n="eventTitle">Title</label>
+          <input id="ev-title" class="input lg" type="text" maxlength="140" required data-i18n-placeholder="titlePlaceholder" placeholder="e.g. Project review">
+          <div class="field-error" data-i18n="required">Please enter a title.</div>
+        </div>
+        <div class="row-when">
+          <div class="field">
+            <label for="ev-date" data-i18n="date">Date</label>
+            <input id="ev-date" class="input" type="date" required>
+          </div>
+          <div class="field" id="f-start">
+            <label for="ev-time" data-i18n="startTime">Starts</label>
+            <input id="ev-time" class="input" type="time" step="300">
+          </div>
+          <div class="field" id="f-end">
+            <label for="ev-end" data-i18n="endTime">Ends</label>
+            <input id="ev-end" class="input" type="time" step="300">
+          </div>
+          <label class="switch"><input id="ev-allday" type="checkbox"><span class="track"></span><span data-i18n="allDay">All day</span></label>
+        </div>
+        <div class="field-error" id="err-end" data-i18n="endBeforeStart" style="margin-top:-6px">The end time must be after the start time.</div>
+        <div class="field">
+          <span class="lbl" data-i18n="category">Category</span>
+          <div class="cat-grid" id="cat-grid"></div>
+        </div>
+        <div class="row-3">
+          <div class="field">
+            <label for="ev-repeat" data-i18n="repeat">Repeat</label>
+            <select id="ev-repeat" class="select"></select>
+          </div>
+          <div class="field" id="f-until">
+            <label for="ev-until" data-i18n="until">Until (optional)</label>
+            <input id="ev-until" class="input" type="date">
+          </div>
+          <div class="field">
+            <label for="ev-reminder" data-i18n="reminder">Reminder</label>
+            <select id="ev-reminder" class="select"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="ev-location" data-i18n="location">Location</label>
+          <input id="ev-location" class="input" type="text" maxlength="200" data-i18n-placeholder="locationPlaceholder" placeholder="e.g. Meeting room B">
+        </div>
+        <div class="field">
+          <label for="ev-notes" data-i18n="notes">Notes</label>
+          <textarea id="ev-notes" class="textarea" rows="2" maxlength="2000" data-i18n-placeholder="notesPlaceholder" placeholder="Anything to remember…"></textarea>
+        </div>
+        <p id="ev-recurring-hint" class="hint" hidden><i data-icon="repeat" class="sm"></i><span data-i18n="recurringHint">This event repeats. Changes apply to all occurrences.</span></p>
+        <p id="ev-readonly-hint" class="hint" hidden><i data-icon="lock" class="sm"></i><span data-i18n="feedReadOnly">This event comes from a subscribed calendar and cannot be edited here.</span></p>
+        <div id="ev-tools" class="btn-row" hidden>
+          <button type="button" id="btn-share" class="btn btn-sm"><i data-icon="share-2" class="sm"></i><span data-i18n="share">Share</span></button>
+          <button type="button" id="btn-win-cal" class="btn btn-sm" data-i18n-title="addToWindowsHint"><i data-icon="calendar-plus" class="sm"></i><span data-i18n="addToWindows">Add to Windows Calendar / Outlook</span></button>
+        </div>
+        <div class="modal-foot">
+          <button type="button" id="btn-delete" class="btn btn-danger" hidden><i data-icon="trash-2" class="sm"></i><span data-i18n="delete">Delete</span></button>
+          <span class="spacer"></span>
+          <button type="button" class="btn btn-ghost" data-close data-i18n="cancel">Cancel</button>
+          <button type="submit" id="btn-save" class="btn btn-primary"><i data-icon="check" class="sm"></i><span data-i18n="save">Save</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel card wide">
+      <div class="modal-head">
+        <h3 id="settings-title" data-i18n="settings">Settings</h3>
+        <button class="icon-btn" data-close data-i18n-title="close" aria-label="Close"><i data-icon="x"></i></button>
+      </div>
+
+      <div class="settings-section">
+        <h4 data-i18n="general">General</h4>
+        <div class="setting-row">
+          <span class="lbl" data-i18n="language">Language</span>
+          <div class="ctl seg glass" id="lang-seg">
+            <button class="seg-btn" data-lang="en">English</button>
+            <button class="seg-btn" data-lang="ar">العربية</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="lbl" data-i18n="theme">Appearance</span>
+          <div class="ctl seg glass" id="theme-seg">
+            <button class="seg-btn" data-theme-opt="system"><i data-icon="monitor" class="sm"></i><span data-i18n="system">System</span></button>
+            <button class="seg-btn" data-theme-opt="light"><i data-icon="sun" class="sm"></i><span data-i18n="light">Light</span></button>
+            <button class="seg-btn" data-theme-opt="dark"><i data-icon="moon" class="sm"></i><span data-i18n="dark">Dark</span></button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <label class="lbl" for="set-weekstart" data-i18n="weekStart">Week starts on</label>
+          <div class="ctl"><select id="set-weekstart" class="select">
+            <option value="6" data-i18n="saturday">Saturday</option>
+            <option value="0" data-i18n="sunday">Sunday</option>
+            <option value="1" data-i18n="monday">Monday</option>
+          </select></div>
+        </div>
+        <div class="setting-row">
+          <label class="lbl" for="set-timefmt" data-i18n="timeFormat">Time format</label>
+          <div class="ctl"><select id="set-timefmt" class="select">
+            <option value="12" data-i18n="h12">12-hour</option>
+            <option value="24" data-i18n="h24">24-hour</option>
+          </select></div>
+        </div>
+        <div class="setting-row" id="row-numerals">
+          <label class="lbl" for="set-numerals" data-i18n="numerals">Numerals</label>
+          <div class="ctl"><select id="set-numerals" class="select">
+            <option value="latn" data-i18n="westernDigits">Western (123)</option>
+            <option value="arab" data-i18n="arabicDigits">Arabic-Indic (١٢٣)</option>
+          </select></div>
+        </div>
+        <div class="setting-row">
+          <span class="lbl" data-i18n="showHijri">Show Hijri dates</span>
+          <label class="switch"><input id="set-hijri" type="checkbox"><span class="track"></span></label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4 data-i18n="notifications">Notifications</h4>
+        <div class="setting-row">
+          <span id="notif-status" class="setting-status">…</span>
+          <div class="ctl"><button id="btn-notif" class="btn btn-sm"><i data-icon="bell" class="sm"></i><span data-i18n="enableNotifications">Enable notifications</span></button></div>
+        </div>
+        <div class="setting-row">
+          <span class="lbl" data-i18n="reminderSound">Play a sound with reminders</span>
+          <label class="switch"><input id="set-sound" type="checkbox"><span class="track"></span></label>
+        </div>
+        <p class="hint"><i data-icon="info" class="sm"></i><span data-i18n="notifHint"></span></p>
+        <div class="setting-row" style="margin-top:4px">
+          <span class="lbl" data-i18n="closedReminders">Reminders when Lumina is closed</span>
+          <div class="ctl"><button id="btn-copy-startup" class="btn btn-sm"><i data-icon="copy" class="sm"></i><span data-i18n="copyStartup">Copy “shell:startup”</span></button></div>
+        </div>
+        <p class="hint"><i data-icon="info" class="sm"></i><span data-i18n="closedRemindersHint"></span></p>
+      </div>
+
+      <div class="settings-section">
+        <h4 data-i18n="syncTitle">Sync &amp; backup folder</h4>
+        <div class="setting-row">
+          <div>
+            <div class="lbl" data-i18n="backupFolder">Sync folder</div>
+            <div id="backup-status" class="setting-status" data-i18n="noFolder">No folder chosen</div>
+          </div>
+          <div class="ctl" id="backup-controls">
+            <button id="btn-choose-folder" class="btn btn-sm"><i data-icon="folder" class="sm"></i><span data-i18n="chooseFolder">Choose folder…</span></button>
+            <button id="btn-backup-now" class="btn btn-sm" hidden><i data-icon="refresh-cw" class="sm"></i><span data-i18n="syncNow">Sync now</span></button>
+            <button id="btn-restore-folder" class="btn btn-sm" hidden><i data-icon="rotate-ccw" class="sm"></i><span data-i18n="restoreFromFolder">Restore from folder</span></button>
+            <button id="btn-forget-folder" class="btn btn-sm btn-ghost" hidden><span data-i18n="forgetFolder">Stop</span></button>
+          </div>
+        </div>
+        <p class="hint" id="backup-hint"><i data-icon="info" class="sm"></i><span data-i18n="syncHint"></span></p>
+        <div class="btn-row">
+          <button id="btn-export-json" class="btn btn-sm"><i data-icon="file-down" class="sm"></i><span data-i18n="exportJson">Export backup (JSON)</span></button>
+          <button id="btn-import" class="btn btn-sm"><i data-icon="file-up" class="sm"></i><span data-i18n="importFile">Import (JSON or ICS)</span></button>
+          <button id="btn-export-ics" class="btn btn-sm"><i data-icon="calendar-check" class="sm"></i><span data-i18n="exportIcs">Export to calendar file (ICS)</span></button>
+          <input id="import-file" type="file" accept=".json,.ics,application/json,text/calendar" hidden>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4 data-i18n="shortcuts">Keyboard shortcuts</h4>
+        <div class="shortcut-list">
+          <div><span data-i18n="sc_new">New event</span><span><span class="kbd">N</span></span></div>
+          <div><span data-i18n="sc_today">Go to today</span><span><span class="kbd">T</span></span></div>
+          <div><span data-i18n="sc_nav">Previous / next</span><span><span class="kbd">←</span><span class="kbd">→</span></span></div>
+          <div><span data-i18n="sc_views">Month / Week / Agenda</span><span><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span></span></div>
+          <div><span data-i18n="sc_search">Search</span><span><span class="kbd">/</span></span></div>
+          <div><span data-i18n="sc_quick">Quick add</span><span><span class="kbd">Q</span></span></div>
+          <div><span data-i18n="sc_close">Close</span><span><span class="kbd">Esc</span></span></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4 data-i18n="dangerZone">Danger zone</h4>
+        <div class="setting-row">
+          <span class="lbl" data-i18n="deleteAll">Delete all events</span>
+          <div class="ctl"><button id="btn-delete-all" class="btn btn-sm btn-danger"><i data-icon="trash-2" class="sm"></i><span data-i18n="deleteAll">Delete all events</span></button></div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4 data-i18n="about">About</h4>
+        <div class="about-box">
+          <div class="brand-logo"><i data-icon="calendar-days"></i></div>
+          <div>
+            <div class="t"><span data-i18n="appName">Lumina Calendar</span> <span class="setting-status">· <span data-i18n="version">Version</span> <span id="app-version">1.0.0</span></span></div>
+            <div class="s" data-i18n="aboutText"></div>
+            <div class="s"><span data-i18n="support">Support</span>: <a href="mailto:haymohsen@gmail.com">haymohsen@gmail.com</a> · <a href="privacy.html" target="_blank" rel="noopener" data-i18n="privacy">Privacy policy</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendars manager -->
+  <div id="calendars-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="calendars-title">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel card">
+      <div class="modal-head">
+        <h3 id="calendars-title" data-i18n="manageCalendars">Manage calendars</h3>
+        <button class="icon-btn" data-close data-i18n-title="close" aria-label="Close"><i data-icon="x"></i></button>
+      </div>
+      <div id="cal-manage-list" class="cal-manage-list"></div>
+      <p class="hint" style="margin-top:6px"><i data-icon="info" class="sm"></i><span data-i18n="builtinNameHint"></span></p>
+
+      <div class="settings-section">
+        <h4 data-i18n="newCalendar">New calendar</h4>
+        <div class="cal-add-row">
+          <input id="newcal-color" class="color-input" type="color" value="#ec4899" data-i18n-title="calendarColor">
+          <input id="newcal-name" class="input" type="text" maxlength="60" data-i18n-placeholder="calendarName" placeholder="Name">
+          <button id="btn-add-cal" class="btn btn-sm btn-primary" type="button"><i data-icon="plus" class="sm"></i><span data-i18n="addCalendar">Add calendar</span></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h4 data-i18n="subscribeFeed">Subscribe to a calendar feed</h4>
+        <div class="form" style="gap:8px">
+          <input id="feed-url" class="input" type="url" spellcheck="false" data-i18n-placeholder="feedUrlPlaceholder" placeholder="https://example.com/calendar.ics" aria-label="Feed URL">
+          <div class="cal-add-row">
+            <input id="feed-color" class="color-input" type="color" value="#14b8a6" data-i18n-title="calendarColor">
+            <input id="feed-name" class="input" type="text" maxlength="60" data-i18n-placeholder="feedName" placeholder="Name (optional)">
+            <button id="btn-add-feed" class="btn btn-sm btn-primary" type="button"><i data-icon="globe" class="sm"></i><span data-i18n="subscribe">Subscribe</span></button>
+          </div>
+          <p class="hint"><i data-icon="info" class="sm"></i><span data-i18n="feedHint"></span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic confirm dialog -->
+  <div id="confirm-modal" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel card narrow">
+      <div class="modal-head">
+        <h3 id="confirm-title">…</h3>
+        <button class="icon-btn" data-close aria-label="Close"><i data-icon="x"></i></button>
+      </div>
+      <p id="confirm-msg" class="hint" style="font-size:13.5px;color:var(--text-2)"></p>
+      <div id="confirm-buttons" class="modal-foot"></div>
+    </div>
+  </div>
+
+  <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+  <script src="js/icons.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/nlp.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
